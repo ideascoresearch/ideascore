@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IdeaScore — AI Business Idea Validator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: #f5f2eb; color: #0e0e0c; min-height: 100vh; }
+
+  header {
+    background: #0e0e0c; color: #f5f2eb;
+    padding: 1rem 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  header h1 { font-family: 'DM Serif Display', serif; font-size: 22px; font-weight: 400; letter-spacing: -0.5px; }
+  header h1 span { color: #c84b2f; }
+  header p { font-size: 13px; color: rgba(255,255,255,0.5); }
+
+  .container { max-width: 780px; margin: 0 auto; padding: 3rem 1.5rem; }
+
+  .hero { text-align: center; margin-bottom: 2.5rem; }
+  .hero h2 { font-family: 'DM Serif Display', serif; font-size: clamp(28px, 5vw, 44px); font-weight: 400; letter-spacing: -1px; margin-bottom: 0.75rem; line-height: 1.15; }
+  .hero h2 em { color: #c84b2f; font-style: italic; }
+  .hero p { font-size: 16px; color: #3a3a36; max-width: 480px; margin: 0 auto; line-height: 1.65; }
+
+  .input-card { background: #fff; border-radius: 12px; padding: 1.75rem; box-shadow: 0 2px 16px rgba(0,0,0,0.07); margin-bottom: 1.5rem; }
+  .input-card label { display: block; font-size: 13px; font-weight: 500; color: #3a3a36; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .input-card textarea { width: 100%; min-height: 100px; resize: vertical; font-family: inherit; font-size: 15px; padding: 12px 14px; border-radius: 8px; border: 1.5px solid #e4dfd3; background: #faf9f6; color: #0e0e0c; line-height: 1.55; transition: border-color 0.2s; }
+  .input-card textarea:focus { outline: none; border-color: #c84b2f; }
+
+  .examples { display: flex; flex-wrap: wrap; gap: 8px; margin: 1rem 0; }
+  .examples span { font-size: 12px; color: #7a7a72; align-self: center; }
+  .chip { font-size: 12px; padding: 5px 12px; border-radius: 99px; border: 1px solid #e4dfd3; background: #f5f2eb; color: #3a3a36; cursor: pointer; transition: all 0.15s; }
+  .chip:hover { border-color: #c84b2f; color: #c84b2f; }
+
+  .btn-validate { width: 100%; padding: 14px; background: #c84b2f; color: #fff; border: none; border-radius: 8px; font-family: inherit; font-size: 16px; font-weight: 500; cursor: pointer; transition: background 0.2s, transform 0.15s; margin-top: 1rem; }
+  .btn-validate:hover { background: #e8603f; transform: translateY(-1px); }
+  .btn-validate:active { transform: scale(0.99); }
+  .btn-validate:disabled { opacity: 0.45; cursor: default; transform: none; }
+
+  .loading { display: none; align-items: center; justify-content: center; gap: 12px; padding: 2rem; color: #7a7a72; font-size: 14px; }
+  .loading.show { display: flex; }
+  .dots { display: flex; gap: 5px; }
+  .dots span { width: 8px; height: 8px; border-radius: 50%; background: #c84b2f; animation: pulse 1.2s infinite; opacity: 0.3; }
+  .dots span:nth-child(2) { animation-delay: 0.2s; }
+  .dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes pulse { 0%,80%,100%{opacity:0.3} 40%{opacity:1} }
+
+  .results { display: none; animation: fadeUp 0.4s ease; }
+  .results.show { display: block; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+  .score-card { background: #fff; border-radius: 12px; padding: 1.5rem 1.75rem; box-shadow: 0 2px 16px rgba(0,0,0,0.07); margin-bottom: 1rem; display: flex; align-items: center; gap: 1.5rem; }
+  .score-num { font-family: 'DM Serif Display', serif; font-size: 64px; font-weight: 400; line-height: 1; min-width: 80px; }
+  .score-right { flex: 1; }
+  .score-verdict { font-size: 20px; font-weight: 500; margin-bottom: 4px; }
+  .score-sub { font-size: 13px; color: #7a7a72; margin-bottom: 10px; }
+  .score-bar { height: 6px; background: #e4dfd3; border-radius: 99px; overflow: hidden; }
+  .score-fill { height: 100%; border-radius: 99px; transition: width 1.2s cubic-bezier(.4,0,.2,1); }
+
+  .verdict-banner { border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem; font-size: 14px; line-height: 1.65; border: 1.5px solid; }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1rem; }
+  .stat-card { background: #fff; border-radius: 10px; padding: 1rem 1.25rem; box-shadow: 0 1px 8px rgba(0,0,0,0.05); }
+  .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #7a7a72; margin-bottom: 6px; }
+  .stat-value { font-size: 18px; font-weight: 500; color: #0e0e0c; }
+  .stat-sub { font-size: 11px; color: #7a7a72; margin-top: 2px; }
+
+  .info-card { background: #fff; border-radius: 10px; padding: 1.25rem 1.5rem; box-shadow: 0 1px 8px rgba(0,0,0,0.05); margin-bottom: 10px; }
+  .info-card h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.09em; color: #7a7a72; margin-bottom: 10px; font-weight: 500; }
+  .info-card ul { list-style: none; }
+  .info-card ul li { font-size: 14px; color: #0e0e0c; padding: 6px 0; border-bottom: 1px solid #f0ece4; display: flex; gap: 10px; align-items: flex-start; line-height: 1.5; }
+  .info-card ul li:last-child { border-bottom: none; padding-bottom: 0; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+
+  .btn-reset { display: block; width: 100%; margin-top: 1.5rem; padding: 12px; background: transparent; border: 1.5px solid #e4dfd3; border-radius: 8px; font-family: inherit; font-size: 14px; color: #3a3a36; cursor: pointer; transition: all 0.2s; }
+  .btn-reset:hover { border-color: #0e0e0c; color: #0e0e0c; }
+
+  .target-card { background: #fff; border-radius: 10px; padding: 1rem 1.5rem; box-shadow: 0 1px 8px rgba(0,0,0,0.05); margin-bottom: 10px; }
+  .target-card .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #7a7a72; margin-bottom: 6px; }
+  .target-card p { font-size: 14px; color: #0e0e0c; line-height: 1.6; }
+
+  footer { text-align: center; padding: 2rem; font-size: 12px; color: #7a7a72; border-top: 1px solid #e4dfd3; margin-top: 2rem; }
+
+  @media (max-width: 600px) {
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .two-col { grid-template-columns: 1fr; }
+    .score-card { flex-direction: column; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Idea<span>Score</span></h1>
+  <p>AI Business Idea Validator</p>
+</header>
+
+<div class="container">
+  <div class="hero">
+    <h2>Will your idea <em>actually</em> make money?</h2>
+    <p>Describe your business concept and get a full viability report in 30 seconds — score, market data, competitors, risks and first steps.</p>
+  </div>
+
+  <div class="input-card">
+    <label>Your business idea</label>
+    <textarea id="idea" placeholder="e.g. A subscription box for dog owners featuring monthly curated toys and healthy treats..."></textarea>
+
+    <div class="examples">
+      <span>Try:</span>
+      <button class="chip" onclick="fill('An AI meal planning app that builds grocery lists based on your dietary goals and weekly budget')">AI meal planner</button>
+      <button class="chip" onclick="fill('A dropshipping store selling ergonomic home office products to remote workers')">Ergonomic dropshipping</button>
+      <button class="chip" onclick="fill('A SaaS tool that auto-generates social media content for small restaurants using their menu')">Restaurant SaaS</button>
+      <button class="chip" onclick="fill('A marketplace connecting freelance tattoo artists with clients wanting custom designs')">Tattoo marketplace</button>
+    </div>
+
+    <button class="btn-validate" id="btn" onclick="validate()">Validate my idea →</button>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="dots"><span></span><span></span><span></span></div>
+    <span id="loading-msg">Analysing your idea...</span>
+  </div>
+
+  <div class="results" id="results"></div>
+</div>
+
+<footer>Powered by Claude AI &nbsp;·&nbsp; IdeaScore</footer>
+
+<script>
+function fill(t) { document.getElementById('idea').value = t; }
+
+const msgs = ['Researching market size...','Identifying competitors...','Assessing risks...','Calculating your score...','Almost done...'];
+let msgTimer;
+
+async function validate() {
+  const idea = document.getElementById('idea').value.trim();
+  if (!idea) { document.getElementById('idea').focus(); return; }
+
+  document.getElementById('btn').disabled = true;
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('results').innerHTML = '';
+  const loading = document.getElementById('loading');
+  loading.classList.add('show');
+
+  let i = 0;
+  const msgEl = document.getElementById('loading-msg');
+  msgEl.textContent = msgs[0];
+  msgTimer = setInterval(() => { i = (i+1) % msgs.length; msgEl.textContent = msgs[i]; }, 2000);
+
+  const prompt = `You are a sharp startup analyst. Analyse this business idea and respond ONLY with valid JSON, no markdown, no extra text.
+
+Business idea: "${idea}"
+
+Return exactly this JSON:
+{
+  "score": <integer 1-100>,
+  "verdict": "<GO | PROCEED WITH CAUTION | NO-GO>",
+  "summary": "<2 honest sentences about this idea>",
+  "market_size": "<e.g. $4.2B global>",
+  "market_growth": "<e.g. 12% YoY>",
+  "time_to_revenue": "<e.g. 2-4 months>",
+  "startup_cost": "<e.g. $500-$2,000>",
+  "target_customer": "<1 sentence>",
+  "competitors": [
+    {"name":"<name>","weakness":"<their key weakness>"},
+    {"name":"<name>","weakness":"<their key weakness>"},
+    {"name":"<name>","weakness":"<their key weakness>"}
+  ],
+  "strengths": ["<strength 1>","<strength 2>","<strength 3>"],
+  "risks": ["<risk 1>","<risk 2>","<risk 3>"],
+  "first_steps": ["<step 1>","<step 2>","<step 3>"]
+}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content.map(b => b.text || '').join('');
+    const d = JSON.parse(text.replace(/```json|```/g,'').trim());
+    clearInterval(msgTimer);
+    loading.classList.remove('show');
+    render(d);
+  } catch(e) {
+    clearInterval(msgTimer);
+    loading.classList.remove('show');
+    document.getElementById('results').innerHTML = '<p style="color:#c84b2f;font-size:14px;text-align:center;padding:1rem">Something went wrong — please try again.</p>';
+    document.getElementById('results').classList.add('show');
+  }
+  document.getElementById('btn').disabled = false;
+}
+
+function render(d) {
+  const s = d.score;
+  const isGo = d.verdict === 'GO';
+  const isCaution = d.verdict === 'PROCEED WITH CAUTION';
+  const scoreColor = s >= 70 ? '#2d6e4e' : s >= 45 ? '#a06000' : '#c84b2f';
+  const fillColor = s >= 70 ? '#4caf6e' : s >= 45 ? '#e0a020' : '#e05050';
+  const vBg = isGo ? '#d4ede2' : isCaution ? '#fef3cd' : '#fde8e4';
+  const vBorder = isGo ? '#4caf6e' : isCaution ? '#e0a020' : '#e05050';
+  const vColor = isGo ? '#2d6e4e' : isCaution ? '#7a4f00' : '#a02020';
+  const vIcon = isGo ? '✅' : isCaution ? '⚠️' : '❌';
+
+  const strengths = (d.strengths||[]).map(s=>`<li><span class="dot" style="background:#4caf6e"></span>${s}</li>`).join('');
+  const risks = (d.risks||[]).map(r=>`<li><span class="dot" style="background:#e05050"></span>${r}</li>`).join('');
+  const steps = (d.first_steps||[]).map(s=>`<li><span class="dot" style="background:#7a7a72"></span>${s}</li>`).join('');
+  const comps = (d.competitors||[]).map(c=>`<li><span class="dot" style="background:#7a7a72"></span><span><strong style="font-weight:500">${c.name}</strong> — ${c.weakness}</span></li>`).join('');
+
+  document.getElementById('results').innerHTML = `
+    <div class="score-card">
+      <div class="score-num" style="color:${scoreColor}">${s}</div>
+      <div class="score-right">
+        <div class="score-verdict" style="color:${scoreColor}">${d.verdict}</div>
+        <div class="score-sub">Viability score out of 100</div>
+        <div class="score-bar"><div class="score-fill" id="sfill" style="width:0%;background:${fillColor}"></div></div>
+      </div>
+    </div>
+
+    <div class="verdict-banner" style="background:${vBg};border-color:${vBorder};color:${vColor}">
+      ${vIcon} ${d.summary}
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Market size</div>
+        <div class="stat-value">${d.market_size}</div>
+        <div class="stat-sub">Growth: ${d.market_growth}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Time to revenue</div>
+        <div class="stat-value">${d.time_to_revenue}</div>
+        <div class="stat-sub">Estimated</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Startup cost</div>
+        <div class="stat-value">${d.startup_cost}</div>
+        <div class="stat-sub">Minimum viable</div>
+      </div>
+    </div>
+
+    <div class="target-card">
+      <div class="stat-label">Target customer</div>
+      <p>${d.target_customer}</p>
+    </div>
+
+    <div class="two-col">
+      <div class="info-card">
+        <h3>💪 Strengths</h3>
+        <ul>${strengths}</ul>
+      </div>
+      <div class="info-card">
+        <h3>⚠️ Risks</h3>
+        <ul>${risks}</ul>
+      </div>
+    </div>
+
+    <div class="info-card" style="margin-bottom:10px">
+      <h3>⚔️ Competitors</h3>
+      <ul>${comps}</ul>
+    </div>
+
+    <div class="info-card">
+      <h3>🚀 First steps</h3>
+      <ul>${steps}</ul>
+    </div>
+
+    <button class="btn-reset" onclick="reset()">← Validate another idea</button>
+  `;
+
+  document.getElementById('results').classList.add('show');
+  setTimeout(() => { const f = document.getElementById('sfill'); if(f) f.style.width = s + '%'; }, 100);
+}
+
+function reset() {
+  document.getElementById('idea').value = '';
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('results').innerHTML = '';
+  document.getElementById('idea').focus();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) validate();
+});
+</script>
+</body>
+</html>
